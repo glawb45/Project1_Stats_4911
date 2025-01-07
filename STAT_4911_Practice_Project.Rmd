@@ -18,3 +18,62 @@ library(gt)
 library(dplyr)
 ```
 
+
+```{r}
+flights %>%
+  group_by(dest) %>%
+  count() %>%
+  summarise(frequency = n,
+            origin) %>%
+  arrange(-frequency)
+
+flights <- flights %>%
+  drop_na()
+
+weather <- weather %>%
+  drop_na()
+
+length(flights)
+
+flights$delay <- TRUE
+
+
+range(flights$dep_delay)
+for (i in 1:nrow(flights)) {
+  if (flights$dep_delay[i] >= 15) {
+    flights$delay[i] = TRUE}
+  else if (flights$dep_delay[i] >= 0 && flights$dep_delay[i] < 15) {
+    flights$delay[i] = FALSE
+  } else {
+    flights$delay[i] = "Early"
+  }
+  }
+
+flights %>%
+  count(delay)
+
+flights$dep_delay
+
+str(flights)
+```
+
+```{r plane sizes}
+
+planes$size <- "Small"
+
+for (i in 1:nrow(planes)) {
+  if (planes$seats[i] > 25 && planes$seats[i] <= 180) {
+    planes$size[i] = "Medium"}
+  else if (planes$size[i] > 180) {
+    planes$size[i] = "Large"
+  }
+  }
+
+```
+
+To look at for weather impact on delay:
+  humid
+  wind_dir
+  wind_speed
+  precip
+  visib
