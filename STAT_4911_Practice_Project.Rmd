@@ -1,0 +1,20 @@
+---
+title: "Stat_4911_Practice_Project"
+author: "Gaurav Law"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+install.packages("nyfcflights13")
+library(nycflights13)
+library(ggplot2)
+library(gt)
+library(dplyr)
+```
+
