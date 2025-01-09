@@ -168,3 +168,15 @@ We find that wind speed has a p value of 0.490046 which is greater than our alph
 modelWeather <- glm(delay ~ temp + dewp + humid + wind_dir + wind_gust + pressure + visib, data = merged)
 summary(modelWeather)
 ```
+
+
+#Trees then Bagging then Forest
+```{r}
+set.seed(101)  
+trainIndex <- sample(1:nrow(merged), 0.7 * nrow(merged))
+
+trainData <- merged[trainIndex, ]
+testData <- merged[-trainIndex, ]
+
+
+```
