@@ -15,6 +15,7 @@ install.packages("nyfcflights13")
 library(nycflights13)
 library(ggplot2)
 library(dplyr)
+library
 ```
 
 ```{r}
@@ -111,9 +112,19 @@ for (i in 1:nrow(planes)) {
 
 ```
 
-To look at for weather impact on delay:
+To look at for weather relationship with delay:
   humid
+  
+
   wind_dir
   wind_speed
   precip
   visib
+
+```{r}
+weather$time_hour <- as.POSIXct(weather$time_hour, format = "%Y-%m-%d %H:%M:%S")
+flights$time_hour <- as.POSIXct(flights$time_hour, format = "%Y-%m-%d %H:%M:%S")
+
+merged <- right_join(flights, weather, by = c("origin", "time_hour"))
+view(merged)
+```
