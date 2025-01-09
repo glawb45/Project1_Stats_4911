@@ -121,10 +121,50 @@ To look at for weather relationship with delay:
   precip
   visib
 
-```{r}
-weather$time_hour <- as.POSIXct(weather$time_hour, format = "%Y-%m-%d %H:%M:%S")
-flights$time_hour <- as.POSIXct(flights$time_hour, format = "%Y-%m-%d %H:%M:%S")
 
+#Merges 
+```{r}
 merged <- right_join(flights, weather, by = c("origin", "time_hour"))
 view(merged)
+```
+
+
+#Gets delayed/non-delayed flights
+```{r}
+delayFlights <- merged %>%
+  filter(merged$delay == "TRUE")
+
+nonDelayFlights <- merged %>%
+  filter(merged$delay == "FALSE")
+```
+
+
+#EDA with Delayed/non-delayed Flights
+```{r}
+mean(delayFlights$visib)
+mean(nonDelayFlights$visib)
+```
+
+```{r}
+merged <- merged %>%
+  mutate(delay = as.character(delay)) %>%
+  mutate(delay = case_when(
+    delay == "TRUE" ~ 1,
+    delay == "Early" ~ -1,
+    delay == "FALSE" ~ 0,
+))
+view(merged)
+```
+
+```{r}
+modelWeather <- glm(delay ~ temp + dewp + humid + wind_dir + wind_speed + wind_gust + precip + pressure + visib, data = merged)
+summary(modelWeather)
+```
+We find that precip has a p value of 0.667210 which is greater than our alpha value of .05 so we would say that precipitation does not have a noticeable effect on delayed flights in the origin airport.
+We find that wind speed has a p value of 0.490046 which is greater than our alpha value of .05 so we would say that precipitation does not have a noticeable effect on delayed flights in the origin airport.
+
+
+```{r}
+modelWeather <- glm(delay ~ temp + dewp + humid + wind_dir + wind_gust + pressure + visib, data = merged)
+summary(modelWeather)
 ```
