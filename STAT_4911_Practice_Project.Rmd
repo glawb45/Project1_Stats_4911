@@ -9,12 +9,13 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+
+# Part I: Exploratory Data Analysis
+
 ```{r}
 library(tidyverse)
-install.packages("nyfcflights13")
 library(nycflights13)
 library(ggplot2)
-library(gt)
 library(dplyr)
 ```
 
@@ -49,6 +50,10 @@ for (i in 1:nrow(flights)) {
   }
   }
 
+```
+
+
+```{r}
 flights %>%
   count(delay)
 
@@ -56,6 +61,7 @@ flights$dep_delay
 
 str(flights)
 ```
+
 
 ```{r plane sizes}
 
@@ -77,3 +83,87 @@ To look at for weather impact on delay:
   wind_speed
   precip
   visib
+  
+  
+  
+  temp
+  dewp
+  humid
+  wind_dir
+  wind_speed
+  wind_gust
+  precip
+  pressure
+  visib
+  
+1. heat map showing most delayed airports
+2. linear model showing the importance of each variable in predicting delays
+3. airlines delay rate and seeing which ones get delayed the most
+
+```{r}
+
+heatmap_data <- flights %>%
+  filter(!is.na(dep_delay), !is.na(hour)) %>% # Filter out missing delays and hours
+  group_by(carrier, hour) %>% # Group by carrier and hour of day
+  summarize(avg_delay = mean(dep_delay, na.rm = TRUE)) %>% # Calculate average delay
+  ungroup()
+
+heatmap_data <- heatmap_data %>%
+  left_join(airlines, by = c("carrier" = "carrier")) # Join with 'airlines' for names
+
+ggplot(heatmap_data, aes(x = hour, y = name, fill = avg_delay)) +
+  geom_tile() +
+  scale_fill_gradient(low = "blue", high = "red", na.value = "grey50", name = "Avg Delay (min)") +
+  labs(
+    title = "Heatmap of Average Flight Delays",
+    x = "Hour of Day",
+    y = "Airline",
+    caption = "Data source: nycflights13"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+```{r}
+weather_over_time <- weather %>%
+  filter(!is.na(temp), !is.na(dewp), !is.na(humid), !is.na(wind_dir),
+         !is.na(wind_speed), !is.na(wind_gust), !is.na(precip),
+         !is.na(pressure), !is.na(visib)) %>%
+  group_by(month) %>% # Group by month
+  summarize(
+    avg_temp = mean(temp, na.rm = TRUE),
+    avg_dewp = mean(dewp, na.rm = TRUE),
+    avg_humid = mean(humid, na.rm = TRUE),
+    avg_wind_dir = mean(wind_dir, na.rm = TRUE),
+    avg_wind_speed = mean(wind_speed, na.rm = TRUE),
+    avg_wind_gust = mean(wind_gust, na.rm = TRUE),
+    avg_precip = mean(precip, na.rm = TRUE),
+    avg_pressure = mean(pressure, na.rm = TRUE),
+    avg_visib = mean(visib, na.rm = TRUE)
+  ) %>%
+  pivot_longer(cols = starts_with("avg_"), names_to = "variable", values_to = "value") %>%
+  mutate(variable = gsub("avg_", "", variable)) # Clean variable names
+
+ggplot(weather_over_time, aes(x = month, y = variable, fill = value)) +
+  geom_tile() +
+  scale_fill_gradient(low = "blue", high = "red", na.value = "grey50", name = "Average Value") +
+  labs(
+    title = "Heatmap of Weather Variables Over Time (by Month)",
+    x = "Month",
+    y = "Weather Variable",
+    caption = "Data source: nycflights13"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    axis.text.y = element_text(size = 10)
+  )
+```
+
+
+
+
+
+
+
