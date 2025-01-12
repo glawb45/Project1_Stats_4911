@@ -14,6 +14,7 @@ library(tidyverse)
 library(nycflights13)
 library(ggplot2)
 library(dplyr)
+library(lubridate)
 ```
 
 ```{r}
@@ -222,11 +223,11 @@ ggplot(heatmap_data, aes(x = hour, y = name, fill = avg_delay)) +
 
 
 ```{r}
-weather_over_time <- weather %>%
+weather_by_airport <- weather %>%
   filter(!is.na(temp), !is.na(dewp), !is.na(humid), !is.na(wind_dir),
          !is.na(wind_speed), !is.na(wind_gust), !is.na(precip),
          !is.na(pressure), !is.na(visib)) %>%
-  group_by(month) %>% # Group by month
+  group_by(origin, month) %>% # Group by airport and month
   summarize(
     avg_temp = mean(temp, na.rm = TRUE),
     avg_dewp = mean(dewp, na.rm = TRUE),
@@ -239,17 +240,18 @@ weather_over_time <- weather %>%
     avg_visib = mean(visib, na.rm = TRUE)
   ) %>%
   pivot_longer(cols = starts_with("avg_"), names_to = "variable", values_to = "value") %>%
-  mutate(variable = gsub("avg_", "", variable)) # Clean variable names
+  mutate(variable = gsub("avg_", "", variable))
 
-ggplot(weather_over_time, aes(x = month, y = variable, fill = value)) +
+ggplot(weather_by_airport, aes(x = month, y = variable, fill = value)) +
   geom_tile() +
   scale_fill_gradient(low = "blue", high = "red", na.value = "grey50", name = "Average Value") +
   labs(
-    title = "Heatmap of Weather Variables Over Time (by Month)",
+    title = "Heatmap of Weather Variables by Airport Over Time (by Month)",
     x = "Month",
     y = "Weather Variable",
     caption = "Data source: nycflights13"
   ) +
+  facet_wrap(~origin) + # Facet by airport
   theme_minimal() +
   theme(
     axis.text.x = element_text(angle = 45, hjust = 1),
@@ -257,8 +259,232 @@ ggplot(weather_over_time, aes(x = month, y = variable, fill = value)) +
   )
 ```
 
+
+
+
+
+
+```{r}
+size_counts <- planes %>%
+  group_by(size) %>%
+  summarize(count = n())
+
+ggplot(size_counts, aes(x = size, y = count, fill = size)) +
+  geom_bar(stat = "identity") +
+  labs(
+    title = "Counts of Small, Medium, and Large Planes",
+    x = "Plane Size",
+    y = "Count",
+    fill = "Plane Size"
+  ) +
+  theme_minimal()
+```
+
+
 ```{r}
 
+# Step 1: Join the flights dataset with the planes dataset
+flights_with_size <- flights %>%
+  inner_join(planes, by = "tailnum") # Join on tailnum to bring in the 'size' column
+
+# Step 2: Count planes by size and airport
+size_by_airport_counts <- flights_with_size %>%
+  group_by(origin, size) %>% # Group by airport (origin) and size
+  summarize(count = n()) %>%
+  ungroup()
+
+# Step 3: Create a grouped bar chart
+ggplot(size_by_airport_counts, aes(x = origin, y = count, fill = size)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(
+    title = "Counts of Small, Medium, and Large Planes by Airport",
+    x = "Airport",
+    y = "Count",
+    fill = "Plane Size"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
 ```
+
+
+```{r}
+ggplot(size_by_airport_counts, aes(x = size, y = count, fill = size)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~origin) + # Facet by airport
+  labs(
+    title = "Counts of Small, Medium, and Large Planes by Airport",
+    x = "Plane Size",
+    y = "Count",
+    fill = "Plane Size"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+```{r}
+flights %>%
+  count(delay) %>%
+  ggplot(aes(x = delay, y = n, fill = delay)) +
+  geom_bar(stat = "identity") +
+  labs(
+    title = "Proportion of Flights by Delay Status",
+    x = "Delay Status",
+    y = "Number of Flights",
+    fill = "Delay Status"
+  ) +
+  theme_minimal()
+```
+
+
+Delay By Airport
+
+```{r}
+flights %>%
+  filter(delay == TRUE) %>%
+  count(origin) %>%
+  ggplot(aes(x = origin, y = n, fill = origin)) +
+  geom_bar(stat = "identity") +
+  labs(
+    title = "Number of Delayed Flights by Airport",
+    x = "Airport",
+    y = "Number of Delays",
+    fill = "Airport"
+  ) +
+  theme_minimal()
+```
+
+
+
+
+Delays by Carrier
+
+
+```{r}
+flights %>%
+  filter(delay == TRUE) %>%
+  count(carrier) %>%
+  left_join(airlines, by = "carrier") %>%
+  ggplot(aes(x = name, y = n, fill = name)) +
+  geom_bar(stat = "identity") +
+  labs(
+    title = "Number of Delayed Flights by Carrier",
+    x = "Airline",
+    y = "Number of Delays",
+    fill = "Airline"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+
+Delays Over Time
+
+```{r}
+flights %>%
+  filter(delay == TRUE) %>%
+  group_by(month) %>%
+  summarize(count = n()) %>%
+  ggplot(aes(x = month, y = count)) +
+  geom_line(color = "red") +
+  geom_point() +
+  labs(
+    title = "Number of Delays Over Time (by Month)",
+    x = "Month",
+    y = "Number of Delays"
+  ) +
+  theme_minimal()
+```
+
+
+
+Delays because of Precipitation
+
+```{r}
+flights_with_weather <- flights %>%
+  inner_join(weather, by = c("origin", "time_hour"))
+
+flights_with_weather %>%
+  filter(!is.na(delay)) %>%
+  ggplot(aes(x = delay, y = precip, fill = delay)) +
+  geom_boxplot() +
+  labs(
+    title = "Effect of Precipitation on Flight Delays",
+    x = "Delay Status",
+    y = "Precipitation (inches)",
+    fill = "Delay Status"
+  ) +
+  theme_minimal()
+```
+
+
+Delays by Time of Day
+
+```{r}
+flights %>%
+  filter(delay == TRUE) %>%
+  count(hour) %>%
+  ggplot(aes(x = hour, y = n)) +
+  geom_line(color = "blue") +
+  geom_point() +
+  labs(
+    title = "Delays by Hour of the Day",
+    x = "Hour",
+    y = "Number of Delays"
+  ) +
+  theme_minimal()
+```
+
+
+Delays by Plane Size
+
+```{r}
+flights_with_planes <- flights %>%
+  inner_join(planes, by = "tailnum")
+
+flights_with_planes %>%
+  filter(!is.na(size)) %>%
+  count(size, delay) %>%
+  ggplot(aes(x = size, y = n, fill = delay)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(
+    title = "Delays by Plane Size",
+    x = "Plane Size",
+    y = "Count",
+    fill = "Delay Status"
+  ) +
+  theme_minimal()
+```
+
+
+Heatmap of Delays (by Weather and Time)
+
+
+```{r}
+flights_with_weather %>%
+  filter(delay == TRUE) %>%
+  group_by(month, hour) %>%
+  summarize(avg_precip = mean(precip, na.rm = TRUE)) %>%
+  ggplot(aes(x = hour, y = month, fill = avg_precip)) +
+  geom_tile() +
+  scale_fill_gradient(low = "blue", high = "red") +
+  labs(
+    title = "Heatmap of Delays by Precipitation and Time",
+    x = "Hour of Day",
+    y = "Month",
+    fill = "Average Precipitation"
+  ) +
+  theme_minimal()
+```
+
+
+
+
+`
+
+
+
 
 

@@ -126,11 +126,11 @@ ggplot(heatmap_data, aes(x = hour, y = name, fill = avg_delay)) +
 
 
 ```{r}
-weather_over_time <- weather %>%
+weather_by_airport <- weather %>%
   filter(!is.na(temp), !is.na(dewp), !is.na(humid), !is.na(wind_dir),
          !is.na(wind_speed), !is.na(wind_gust), !is.na(precip),
          !is.na(pressure), !is.na(visib)) %>%
-  group_by(month) %>% # Group by month
+  group_by(origin, month) %>% # Group by airport and month
   summarize(
     avg_temp = mean(temp, na.rm = TRUE),
     avg_dewp = mean(dewp, na.rm = TRUE),
@@ -143,22 +143,24 @@ weather_over_time <- weather %>%
     avg_visib = mean(visib, na.rm = TRUE)
   ) %>%
   pivot_longer(cols = starts_with("avg_"), names_to = "variable", values_to = "value") %>%
-  mutate(variable = gsub("avg_", "", variable)) # Clean variable names
+  mutate(variable = gsub("avg_", "", variable))
 
-ggplot(weather_over_time, aes(x = month, y = variable, fill = value)) +
+ggplot(weather_by_airport, aes(x = month, y = variable, fill = value)) +
   geom_tile() +
   scale_fill_gradient(low = "blue", high = "red", na.value = "grey50", name = "Average Value") +
   labs(
-    title = "Heatmap of Weather Variables Over Time (by Month)",
+    title = "Heatmap of Weather Variables by Airport Over Time (by Month)",
     x = "Month",
     y = "Weather Variable",
     caption = "Data source: nycflights13"
   ) +
+  facet_wrap(~origin) + # Facet by airport
   theme_minimal() +
   theme(
     axis.text.x = element_text(angle = 45, hjust = 1),
     axis.text.y = element_text(size = 10)
   )
+
 ```
 
 
