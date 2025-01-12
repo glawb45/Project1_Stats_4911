@@ -11,11 +11,9 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 library(tidyverse)
-install.packages("nyfcflights13")
 library(nycflights13)
 library(ggplot2)
 library(dplyr)
-library
 ```
 
 ```{r}
@@ -259,5 +257,8 @@ ggplot(weather_over_time, aes(x = month, y = variable, fill = value)) +
   )
 ```
 
+```{r}
+
+```
 
 
