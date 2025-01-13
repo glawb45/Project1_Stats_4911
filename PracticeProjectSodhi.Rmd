@@ -142,8 +142,13 @@ To look at for weather relationship with delay:
 
 #Merges 
 ```{r}
-merged <- right_join(flights, weather, by = c("origin", "time_hour"))
-view(merged)
+merged <- flights %>%
+  left_join(weather, by = c("origin", "year", "month", "day", "hour", "time_hour"))
+
+merged <- merged %>% drop_na() # drop NA values
+
+merged <- merged %>%
+  right_join(planes, by = c("tailnum"))
 ```
 
 
