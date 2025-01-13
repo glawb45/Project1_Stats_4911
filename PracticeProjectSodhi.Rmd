@@ -102,12 +102,14 @@ str(flights)
 planes$size <- "Small"
 
 for (i in 1:nrow(planes)) {
-  if (planes$seats[i] > 25 && planes$seats[i] <= 180) {
-    planes$size[i] = "Medium"}
-  else if (planes$size[i] > 180) {
+  if (planes$seats[i] <= 25) {
+    planes$size[i] = "Small"
+    } else if (planes$seats[i] > 25 && planes$seats[i] <= 180) {
+    planes$size[i] = "Medium"
+    } else if (planes$size[i] > 180) {
     planes$size[i] = "Large"
   }
-  }
+}
 
 ```
 
@@ -281,19 +283,18 @@ ggplot(size_counts, aes(x = size, y = count, fill = size)) +
 ```
 
 
+
+
 ```{r}
 
-# Step 1: Join the flights dataset with the planes dataset
 flights_with_size <- flights %>%
-  inner_join(planes, by = "tailnum") # Join on tailnum to bring in the 'size' column
+  inner_join(planes, by = "tailnum") 
 
-# Step 2: Count planes by size and airport
 size_by_airport_counts <- flights_with_size %>%
   group_by(origin, size) %>% # Group by airport (origin) and size
   summarize(count = n()) %>%
   ungroup()
 
-# Step 3: Create a grouped bar chart
 ggplot(size_by_airport_counts, aes(x = origin, y = count, fill = size)) +
   geom_bar(stat = "identity", position = "dodge") +
   labs(
@@ -308,18 +309,6 @@ ggplot(size_by_airport_counts, aes(x = origin, y = count, fill = size)) +
 ```
 
 
-```{r}
-ggplot(size_by_airport_counts, aes(x = size, y = count, fill = size)) +
-  geom_bar(stat = "identity") +
-  facet_wrap(~origin) + # Facet by airport
-  labs(
-    title = "Counts of Small, Medium, and Large Planes by Airport",
-    x = "Plane Size",
-    y = "Count",
-    fill = "Plane Size"
-  ) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
 
