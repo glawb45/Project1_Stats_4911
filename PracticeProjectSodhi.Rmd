@@ -892,6 +892,9 @@ cat("Tree RMSE:", mod_tree_rmse, "\n")
 cat("Random Forest RMSE:", mod_rf_rmse)
 ```
 
+
+
+
 ```{r tree with testing}
 
 set.seed(123)
@@ -916,6 +919,8 @@ cv_tree
 
 with(cv_tree, plot(dev~size, type = 'b'))
 ```
+
+
 
 
 ```{r Random Forest with testing}
