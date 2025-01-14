@@ -474,7 +474,147 @@ flights_with_weather %>%
 ```
 
 
+#PNG images
+```{r}
+library(png)
+url <- "https://logos-world.net/wp-content/uploads/2021/02/Alaska-Airlines-Logo-700x394.png"
+filepath <- "alaskaAir.png"
+download.file(url, filepath, mode = "wb")
+alaskaAir <- readPNG(filepath)
 
+url1 <- "https://logos-world.net/wp-content/uploads/2021/08/Hawaiian-Airlines-Logo-700x394.png"
+filepath1 <- "hawaiianAir.png"
+download.file(url1, filepath1, mode = "wb")
+hawaiianAir <- readPNG(filepath1)
+
+url2 <- "https://logos-world.net/wp-content/uploads/2023/01/Virgin-Atlantic-Logo-500x281.png"
+filepath2 <- "Virgin.png"
+download.file(url2, filepath2, mode = "wb")
+virginAir <- readPNG(filepath2)
+
+url3 <- "https://logos-world.net/wp-content/uploads/2023/05/Endeavor-Air-Logo-500x281.png"
+filepath3 <- "Endeavor.png"
+download.file(url3, filepath3, mode = "wb")
+endeavorAir <- readPNG(filepath3)
+
+url4 <- "https://1000logos.net/wp-content/uploads/2017/06/United-Airlines-Logo.png"
+filepath4 <- "United.png"
+download.file(url4, filepath4, mode = "wb")
+unitedAir <- readPNG(filepath4)
+
+url5 <- "https://logos-world.net/wp-content/uploads/2020/11/American-Airlines-Emblem.png"
+filepath5 <- "American.png"
+download.file(url5, filepath5, mode = "wb")
+americanAir <- readPNG(filepath5)
+
+url6 <- "https://logos-world.net/wp-content/uploads/2020/10/Southwest-Airlines-Emblem.png"
+filepath6 <- "Southwest.png"
+download.file(url6, filepath6, mode = "wb")
+southwestAir <- readPNG(filepath6)
+
+url7 <- "https://logos-world.net/wp-content/uploads/2021/08/Delta-Emblem.png"
+filepath7 <- "Delta.png"
+download.file(url7, filepath7, mode = "wb")
+deltaAir <- readPNG(filepath7)
+
+url8 <- "https://upload.wikimedia.org/wikipedia/commons/4/47/ExpressJet_Airlines%2C_LLC_-_Copy.png"
+filepath8 <- "Express.png"
+download.file(url8, filepath8, mode = "wb")
+expressAir <- readPNG(filepath8)
+
+url9 <- "https://1000logos.net/wp-content/uploads/2019/12/JetBlue-Airways-Logo.png"
+filepath9 <- "JetBlue.png"
+download.file(url9, filepath9, mode = "wb")
+jetblueAir <- readPNG(filepath9)
+
+url10 <- "https://www.aviatorcapital.com/wp-content/uploads/2017/11/Mesa-Airlines.png"
+filepath10 <- "Mesa.png"
+download.file(url10, filepath10, mode = "wb")
+mesaAir <- readPNG(filepath10)
+
+url11 <- "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/US_Airways_Logo_2011.svg/800px-US_Airways_Logo_2011.svg.png"
+filepath11 <- "USAirways.png"
+download.file(url11, filepath11, mode = "wb")
+usAirwaysAir <- readPNG(filepath11)
+
+url12 <- "https://1000logos.net/wp-content/uploads/2023/06/SkyWest-Logo-500x281.png"
+filepath12 <- "Skywest.png"
+download.file(url12, filepath12, mode = "wb")
+skywestAir <- readPNG(filepath12)
+
+url13 <- "https://www.envoyair.com/wp-content/uploads/2024/03/Envoy-logo_blue-01-1.png"
+filepath13 <- "Envoy.png"
+download.file(url13, filepath13, mode = "wb")
+envoyAir <- readPNG(filepath13)
+
+url14 <- "https://logos-world.net/wp-content/uploads/2023/01/AirTran-Airways-Logo-500x281.png"
+filepath14 <- "AirTran.png"
+download.file(url14, filepath14, mode = "wb")
+airtranAir <- readPNG(filepath14)
+
+url15 <- "https://logos-world.net/wp-content/uploads/2021/03/Frontier-Airlines-Emblem.png"
+filepath15 <- "Frontier.png"
+download.file(url15, filepath15, mode = "wb")
+frontierAir <- readPNG(filepath15)
+```
+```{r}
+delays$name <- c(
+  "AirTran",
+  "Alaska",
+  "American",
+  "Delta",
+  "Endeavor",
+  "Envoy",
+  "ExpressJet",
+  "Frontier",
+  "Hawaiian",
+  "JetBlue",
+  "Mesa",
+  "SkyWest",
+  "Southwest",
+  "United",
+  "USAirways",
+  "Virgin"
+)
+
+logos <- list(
+  Alaska = rasterGrob(alaskaAir, interpolate = TRUE),
+  Hawaiian = rasterGrob(hawaiianAir, interpolate = TRUE),
+  Virgin = rasterGrob(virginAir, interpolate = TRUE),
+  Endeavor = rasterGrob(endeavorAir, interpolate = TRUE),
+  United = rasterGrob(unitedAir, interpolate = TRUE),
+  American = rasterGrob(americanAir, interpolate = TRUE),
+  Southwest = rasterGrob(southwestAir, interpolate = TRUE),
+  Delta = rasterGrob(deltaAir, interpolate = TRUE),
+  ExpressJet = rasterGrob(expressAir, interpolate = TRUE),
+  JetBlue = rasterGrob(jetblueAir, interpolate = TRUE),
+  Mesa = rasterGrob(mesaAir, interpolate = TRUE),
+  USAirways = rasterGrob(usAirwaysAir, interpolate = TRUE),
+  SkyWest = rasterGrob(skywestAir, interpolate = TRUE),
+  Envoy = rasterGrob(envoyAir, interpolate = TRUE),
+  AirTran = rasterGrob(airtranAir, interpolate = TRUE),
+  Frontier = rasterGrob(frontierAir, interpolate = TRUE)
+)
+
+logoGraph <- ggplot(delays, aes(x = avg_dep_delay, y = avg_arr_delay)) +
+  geom_point(color = "white") + 
+  xlim(0, max(delays$avg_dep_delay) + 2) +
+  ylim(0, max(delays$avg_arr_delay) + 2) +
+  labs(title = "Airline Delays", x = "Average Departure Delay", y = "Average Arrival Delay") +
+  theme_minimal()
+
+for (i in 1:nrow(delays)) {
+  logoGraph <- logoGraph + annotation_custom(
+    logos[[delays$name[i]]],
+    xmin = delays$avg_dep_delay[i] - 1.5,
+    xmax = delays$avg_dep_delay[i] + 1.5,
+    ymin = delays$avg_arr_delay[i] - 1.5,
+    ymax = delays$avg_arr_delay[i] + 1.5
+  )
+}
+
+print(logoGraph)
+```
 
 `
 
