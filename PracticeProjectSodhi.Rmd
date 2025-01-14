@@ -19,6 +19,7 @@ library(dplyr)
 library(randomForest)
 library(tree)
 library(lubridate)
+library(grid)
 ```
 
 
@@ -177,6 +178,12 @@ To look at for weather relationship with delay:
 
 merged <- flights %>%
   left_join(weather, by = c("origin", "year", "month", "day", "hour", "time_hour"))
+
+merged <- merged %>%
+  left_join(airlines, by = c("carrier"))
+
+merged <- merged %>%
+  left_join(airports, by = c(dest = "faa"))
 
 merged <- merged %>% drop_na() # drop NA values
 
@@ -506,9 +513,9 @@ This bar chart shows the delay status for each of the 3 sizes of planes.It uses 
 ```{r}
 flights_with_weather %>%
   filter(delay == TRUE) %>%
-  group_by(month, hour) %>%
+  group_by(month.x, hour.x) %>%
   summarize(avg_precip = mean(precip, na.rm = TRUE)) %>%
-  ggplot(aes(x = hour, y = month, fill = avg_precip)) +
+  ggplot(aes(x = hour.x, y = month.x, fill = avg_precip)) +
   geom_tile() +
   scale_fill_gradient(low = "blue", high = "red") +
   labs(
@@ -693,6 +700,8 @@ filepath15 <- "Frontier.png"
 download.file(url15, filepath15, mode = "wb")
 frontierAir <- readPNG(filepath15)
 ```
+
+
 ```{r}
 delays$name <- c(
   "AirTran",
@@ -712,6 +721,8 @@ delays$name <- c(
   "USAirways",
   "Virgin"
 )
+
+library(grid)
 
 logos <- list(
   Alaska = rasterGrob(alaskaAir, interpolate = TRUE),
@@ -963,9 +974,6 @@ cat("Tree RMSE:", mod_tree_rmse, "\n")
 cat("Random Forest RMSE:", mod_rf_rmse)
 ```
 
-
-
-
 ```{r tree with testing}
 
 set.seed(123)
@@ -990,8 +998,6 @@ cv_tree
 
 with(cv_tree, plot(dev~size, type = 'b'))
 ```
-
-
 
 
 ```{r Random Forest with testing}
@@ -1026,5 +1032,3 @@ plot(dendrogram, main = "Dendrogram of Feature Importance", xlab = "Features", y
 cat("Tree RMSE:", mod_tree_rmse, "\n")
 cat("Random Forest RMSE:", mod_rf_rmse)
 ```
-
-
