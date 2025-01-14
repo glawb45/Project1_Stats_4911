@@ -1,7 +1,7 @@
 ---
 title: "Stat4911PracticeProject"
-author: "Armaan Sodhi.23"
-date: "2025-01-07"
+author: "Armaan Sodhi, Max Margolis, Nathan Snyder, Gaurav Law"
+date: "`r Sys.Date()`"
 output: html_document
 ---
 
@@ -11,9 +11,12 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 library(tidyverse)
+#install.packages("nyfcflights13")
 library(nycflights13)
 library(ggplot2)
 library(dplyr)
+library(randomForest)
+library(tree)
 library(lubridate)
 ```
 
@@ -34,12 +37,13 @@ top10AirportsDest <- flights %>%
 ```
 
 ```{r}
-ggplot(top10AirportsDest, aes(x = reorder(dest, -n), y = n)) +
+ggplot(top10AirportsDest, aes(x = reorder(dest, -n), y = n, fill = dest)) +
     geom_bar(stat = "identity") +
-  labs(title = "Top 10 Airports by Destination",
-       x = "Destination Airport",
-       y = "Count") +
-  theme_minimal()
+    labs(title = "Top 10 Airports by Destination",
+         x = "Destination Airport",
+         y = "Count") +
+    scale_fill_brewer(palette = "Set3") +
+    theme_minimal()
 ```
 
 ```{r}
@@ -51,12 +55,14 @@ AirportOrigin <- flights %>%
 ```
 
 ```{r}
-ggplot(AirportOrigin, aes(x = reorder(origin, -n), y = n)) +
+ggplot(AirportOrigin, aes(x = reorder(origin, -n), y = n, fill = origin)) +
     geom_bar(stat = "identity") +
   labs(title = "Top Airports by Origin",
        x = "Origin Airport",
        y = "Count") +
+  scale_fill_brewer(palette = "Set2") +
   theme_minimal()
+
 ```
 
 ```{r}
@@ -73,12 +79,8 @@ flights <- flights %>%
 weather <- weather %>%
   drop_na()
 
-length(flights)
-
 flights$delay <- TRUE
 
-
-range(flights$dep_delay)
 for (i in 1:nrow(flights)) {
   if (flights$dep_delay[i] >= 15) {
     flights$delay[i] = TRUE}
@@ -87,14 +89,20 @@ for (i in 1:nrow(flights)) {
   } else {
     flights$delay[i] = "Early"
   }
-  }
+}
+
+flights %>% 
+  ggplot(aes(x = delay, y = dep_delay)) +
+  geom_boxplot(outlier.colour = "red", outlier.shape = 16, alpha = 0.6) +
+  geom_jitter(width = 0.2, alpha = 0.6) +
+  labs(title = "Boxplot of delays",
+       x = "Delay?",
+       y = "Frequency") +
+  theme_classic()
+
 
 flights %>%
   count(delay)
-
-flights$dep_delay
-
-str(flights)
 ```
 
 ```{r plane sizes}
@@ -111,9 +119,21 @@ for (i in 1:nrow(planes)) {
   }
 }
 
-```
+planes %>% 
+  ggplot(aes(x = size, y = engines)) +
+  geom_boxplot(outlier.colour = "red", outlier.shape = 16, alpha = 0.6) +
+  geom_jitter(width = 0.2, alpha = 0.6) +
+  labs(title = "Boxplot of sizes",
+       x = "Size of plane",
+       y = "Frequency") +
+  theme_classic()
+
+planes %>%
+  count(size)
 
 ```
+
+```{r}
 flights <- flights %>%
   left_join(airlines, by = c("carrier"))
 
@@ -140,15 +160,27 @@ To look at for weather relationship with delay:
   visib
 
 
-#Merges 
+# Merging datasets
 ```{r}
+
 merged <- flights %>%
   left_join(weather, by = c("origin", "year", "month", "day", "hour", "time_hour"))
 
 merged <- merged %>% drop_na() # drop NA values
 
+# Planes have no significance in model
+
+# planes <- planes[, !names(planes) %in% "speed"]
+
+#merged <- merged %>% left_join(planes, by = c("tailnum"))
+
 merged <- merged %>%
-  right_join(planes, by = c("tailnum"))
+  mutate(delay = as.character(delay)) %>%
+  mutate(delay = case_when(
+    delay == "TRUE" ~ 1,
+    delay == "Early" ~ -1,
+    delay == "FALSE" ~ 0,
+))
 ```
 
 
@@ -167,43 +199,6 @@ nonDelayFlights <- merged %>%
 mean(delayFlights$visib)
 mean(nonDelayFlights$visib)
 ```
-
-```{r}
-merged <- merged %>%
-  mutate(delay = as.character(delay)) %>%
-  mutate(delay = case_when(
-    delay == "TRUE" ~ 1,
-    delay == "Early" ~ -1,
-    delay == "FALSE" ~ 0,
-))
-view(merged)
-```
-
-```{r}
-modelWeather <- glm(delay ~ temp + dewp + humid + wind_dir + wind_speed + wind_gust + precip + pressure + visib, data = merged)
-summary(modelWeather)
-```
-We find that precip has a p value of 0.667210 which is greater than our alpha value of .05 so we would say that precipitation does not have a noticeable effect on delayed flights in the origin airport.
-We find that wind speed has a p value of 0.490046 which is greater than our alpha value of .05 so we would say that precipitation does not have a noticeable effect on delayed flights in the origin airport.
-
-
-```{r}
-modelWeather <- glm(delay ~ temp + dewp + humid + wind_dir + wind_gust + pressure + visib, data = merged)
-summary(modelWeather)
-```
-
-
-#Trees then Bagging then Forest
-```{r}
-set.seed(101)  
-trainIndex <- sample(1:nrow(merged), 0.7 * nrow(merged))
-
-trainData <- merged[trainIndex, ]
-testData <- merged[-trainIndex, ]
-
-
-```
-
 
 ```{r}
 heatmap_data <- flights %>%
@@ -616,9 +611,266 @@ for (i in 1:nrow(delays)) {
 print(logoGraph)
 ```
 
-`
+```{r}
+modelWeather <- glm(delay ~ temp + dewp + humid + wind_dir + wind_speed + wind_gust + precip + pressure + visib, data = merged)
+summary(modelWeather)
+```
+We find that precip has a p value of 0.667210 which is greater than our alpha value of .05 so we would say that precipitation does not have a noticeable effect on delayed flights in the origin airport.
+We find that wind speed has a p value of 0.490046 which is greater than our alpha value of .05 so we would say that precipitation does not have a noticeable effect on delayed flights in the origin airport.
+
+
+```{r}
+modelWeather <- glm(delay ~ temp + dewp + humid + wind_dir + wind_gust + pressure + visib, data = merged)
+summary(modelWeather)
+```
+
+# Tree-Based Models
+
+## All Factors
+
+### Training
+
+```{r all factors}
+set.seed(101)
+trainIndex <- sample(1:nrow(merged), 0.7 * nrow(merged))
+
+training_data <- merged[trainIndex, ]
+testing_data <- merged[-trainIndex, ]
+
+mod_tree = tree(delay ~ ., data = training_data)
+mod_tree
+
+# get model for decision tree
+summary(mod_tree)
+
+# plot the tree in a dendrogram
+plot(mod_tree, cex = 0.8)
+text(mod_tree, pretty = 0, cex = 0.6)
+
+# Find RMSE
+mod_tree_pred = predict(mod_tree, newdata = training_data)
+mod_tree_rmse = sqrt(mean((training_data$delay - mod_tree_pred)^2))
+mod_tree_rmse
+
+# Use K-fold cross validation to reduce tree complexity
+cv_tree = cv.tree(mod_tree)
+names(cv_tree)
+
+cv_tree
+
+# identify trends in deviance with respect to the size of the tree
+with(cv_tree, plot(dev~size, type = 'b'))
+```
+```{r Random Forest with training}
+
+# fit the random forest model
+mod_rf = randomForest(delay ~ ., data = training_data,  mtry = sqrt(NCOL(training_data)-1), importance = TRUE)
+mod_rf
+
+plot(mod_rf)
+
+mod_rf_pred = predict(mod_rf, newdata = training_data)
+mod_rf_rmse  = sqrt(mean((training_data$delay - mod_rf_pred)^2))
+mod_rf_rmse
+
+# run lines together to compare variable importance in bagging vs. RF
+varImpPlot(mod_rf, cex = 0.6)
+
+# Compare the three RMSEs to judge which one we will use for testing
+cat("Tree RMSE:", mod_tree_rmse, "\n")
+cat("Random Forest RMSE:", mod_rf_rmse)
+
+
+```
+
+### Testing
+
+```{r tree with testing}
+
+set.seed(123)
+mod_tree = tree(delay ~ ., data = training_data)
+mod_tree
+
+# get model for decision tree
+summary(mod_tree)
+
+# plot the tree
+plot(mod_tree, cex = 0.8)   # Adjust tree size
+text(mod_tree, pretty = 0, cex = 0.6)  # Adjust text size
+
+mod_tree_pred = predict(mod_tree, newdata = testing_data)
+mod_tree_rmse = sqrt(mean((testing_data$delay - mod_tree_pred)^2))
+mod_tree_rmse
+
+cv_tree = cv.tree(mod_tree)
+names(cv_tree)
+
+cv_tree
+
+with(cv_tree, plot(dev~size, type = 'b'))
+```
+
+```{r Random Forest with testing}
+
+set.seed(123)
+mod_rf = randomForest(delay ~ ., data = training_data,  mtry = sqrt(NCOL(training_data)-1), importance = TRUE)
+mod_rf
+
+plot(mod_rf)
+
+mod_rf_pred = predict(mod_rf, newdata = testing_data)
+mod_rf_rmse  = sqrt(mean((testing_data$delay - mod_rf_pred)^2))
+mod_rf_rmse
+
+varImpPlot(mod_rf, cex = 0.6)
+
+library(rpart)
+library(rpart.plot)
+
+tree_model <- rpart(delay ~ ., data = testing_data)
+rpart.plot::rpart.plot(tree_model)
+
+# Get the feature importance
+importance_matrix <- randomForest::importance(mod_rf)
+
+# Perform hierarchical clustering on feature importance
+dendrogram <- hclust(dist(importance_matrix))
+
+# Plot the dendrogram
+plot(dendrogram, main = "Dendrogram of Feature Importance", xlab = "Features", ylab = "Distance")
+
+cat("Tree RMSE:", mod_tree_rmse, "\n")
+cat("Random Forest RMSE:", mod_rf_rmse)
+```
+
+## Month, dep_delay removed
+
+```{r decision tree model}
+
+flights_test <- merged
+flights_test <- flights_test %>%
+  drop_na()
+
+flights_test <- flights_test[, !names(flights_test) %in% c("month", "dep_delay")]
+
+set.seed(101)
+trainIndex <- sample(1:nrow(flights_test), 0.7 * nrow(flights_test))
+
+training_data <- flights_test[trainIndex, ]
+testing_data <- flights_test[-trainIndex, ]
+
+mod_tree = tree(delay ~ ., data = training_data)
+mod_tree
+
+# get model for decision tree
+summary(mod_tree)
+
+# plot the tree in a dendrogram
+plot(mod_tree, cex = 0.8)
+text(mod_tree, pretty = 0, cex = 0.6)
+
+# Find RMSE
+mod_tree_pred = predict(mod_tree, newdata = training_data)
+mod_tree_rmse = sqrt(mean((training_data$delay - mod_tree_pred)^2))
+mod_tree_rmse
+
+# Use K-fold cross validation to reduce tree complexity
+cv_tree = cv.tree(mod_tree)
+names(cv_tree)
+
+cv_tree
+
+# identify trends in deviance with respect to the size of the tree
+with(cv_tree, plot(dev~size, type = 'b'))
 
 
 
+colSums(is.na(testing_data))
+
+nrow(training_data)
+nrow(testing_data)
+
+```
 
 
+```{r forest with training}
+
+set.seed(123)
+#colSums(is.na(training_data))
+
+# fit the random forest model
+mod_rf = randomForest(delay ~ ., data = training_data,  mtry = sqrt(NCOL(training_data)-1), importance = TRUE)
+mod_rf
+
+plot(mod_rf)
+
+mod_rf_pred = predict(mod_rf, newdata = training_data)
+mod_rf_rmse  = sqrt(mean((training_data$delay - mod_rf_pred)^2))
+mod_rf_rmse
+
+# run lines together to compare variable importance in bagging vs. RF
+varImpPlot(mod_rf, cex = 0.6)
+
+# Compare the three RMSEs to judge which one we will use for testing
+cat("Tree RMSE:", mod_tree_rmse, "\n")
+cat("Random Forest RMSE:", mod_rf_rmse)
+```
+
+```{r tree with testing}
+
+set.seed(123)
+mod_tree = tree(delay ~ ., data = training_data)
+mod_tree
+
+# get model for decision tree
+summary(mod_tree)
+
+# plot the tree
+plot(mod_tree, cex = 0.8)   # Adjust tree size
+text(mod_tree, pretty = 0, cex = 0.6)  # Adjust text size
+
+mod_tree_pred = predict(mod_tree, newdata = testing_data)
+mod_tree_rmse = sqrt(mean((testing_data$delay - mod_tree_pred)^2))
+mod_tree_rmse
+
+cv_tree = cv.tree(mod_tree)
+names(cv_tree)
+
+cv_tree
+
+with(cv_tree, plot(dev~size, type = 'b'))
+```
+
+
+```{r Random Forest with testing}
+
+set.seed(123)
+mod_rf = randomForest(delay ~ ., data = training_data,  mtry = sqrt(NCOL(training_data)-1), importance = TRUE)
+mod_rf
+
+plot(mod_rf)
+
+mod_rf_pred = predict(mod_rf, newdata = testing_data)
+mod_rf_rmse  = sqrt(mean((testing_data$delay - mod_rf_pred)^2))
+mod_rf_rmse
+
+varImpPlot(mod_rf, cex = 0.6)
+
+library(rpart)
+library(rpart.plot)
+
+tree_model <- rpart(delay ~ ., data = testing_data)
+rpart.plot::rpart.plot(tree_model)
+
+# Get the feature importance
+importance_matrix <- randomForest::importance(mod_rf)
+
+# Perform hierarchical clustering on feature importance
+dendrogram <- hclust(dist(importance_matrix))
+
+# Plot the dendrogram
+plot(dendrogram, main = "Dendrogram of Feature Importance", xlab = "Features", ylab = "Distance")
+
+cat("Tree RMSE:", mod_tree_rmse, "\n")
+cat("Random Forest RMSE:", mod_rf_rmse)
+```
