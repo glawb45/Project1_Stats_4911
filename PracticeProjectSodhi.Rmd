@@ -9,6 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+
 ```{r}
 library(tidyverse)
 #install.packages("nyfcflights13")
@@ -20,6 +21,7 @@ library(tree)
 library(lubridate)
 ```
 
+
 ```{r}
 airlines <- nycflights13::airlines
 airports <- nycflights13::airports
@@ -28,6 +30,7 @@ planes <- nycflights13::planes
 weather <- nycflights13::weather
 ```
 
+
 ```{r}
 top10AirportsDest <- flights %>%
   group_by(dest) %>%
@@ -35,6 +38,7 @@ top10AirportsDest <- flights %>%
   arrange(desc(n)) %>%
   head(10)
 ```
+
 
 ```{r}
 ggplot(top10AirportsDest, aes(x = reorder(dest, -n), y = n, fill = dest)) +
@@ -45,7 +49,10 @@ ggplot(top10AirportsDest, aes(x = reorder(dest, -n), y = n, fill = dest)) +
     scale_fill_brewer(palette = "Set3") +
     theme_minimal()
 ```
+
 This visualization shows the 3 airports that are listed as the origin of a flight the most. The height of each bar represents the number of times (count) that each airport is listed as an origin. EWR (Newark Liberty National Airport) seems to be the top origin airport of the 3, followed by John F Kennedy and then La Guardia.
+
+
 ```{r}
 AirportOrigin <- flights %>%
   group_by(origin) %>%
@@ -53,6 +60,8 @@ AirportOrigin <- flights %>%
   arrange(desc(n)) %>%
   head(10)
 ```
+
+
 
 ```{r}
 ggplot(AirportOrigin, aes(x = reorder(origin, -n), y = n, fill = origin)) +
@@ -64,6 +73,7 @@ ggplot(AirportOrigin, aes(x = reorder(origin, -n), y = n, fill = origin)) +
   theme_minimal()
 
 ```
+
 
 ```{r}
 flights %>%
@@ -105,6 +115,7 @@ flights %>%
   count(delay)
 ```
 
+
 ```{r plane sizes}
 
 planes$size <- "Small"
@@ -132,6 +143,7 @@ planes %>%
   count(size)
 
 ```
+
 
 ```{r}
 flights <- flights %>%
@@ -184,6 +196,20 @@ merged <- merged %>%
 ```
 
 
+## Merged flights + planes
+```{r}
+fl_pl <- flights %>%
+  left_join(planes, by = c("tailnum"))
+
+fl_pl <- fl_pl[, !names(fl_pl) %in% "speed"]
+
+colSums(is.na(fl_pl))
+fl_pl <- fl_pl %>%
+  drop_na()
+nrow(fl_pl)
+```
+
+
 #Gets delayed/non-delayed flights
 ```{r}
 delayFlights <- merged %>%
@@ -199,6 +225,7 @@ nonDelayFlights <- merged %>%
 mean(delayFlights$visib)
 mean(nonDelayFlights$visib)
 ```
+
 
 ```{r}
 heatmap_data <- flights %>%
@@ -222,7 +249,10 @@ ggplot(heatmap_data, aes(x = hour, y = name, fill = avg_delay)) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
+
+
 This heatmap shows the average delay for each airline throughout the day (by hour). The scale goes from blue-red with the more red meaning the greater the average delay. he average delay across all airlines seems to increase as the hour increases. Mesa Airlines appears to have a random spike at hour 10 where the average delay is much greater than the other hours for that same airline.
+
 
 ```{r}
 weather_by_airport <- weather %>%
@@ -307,6 +337,8 @@ ggplot(size_by_airport_counts, aes(x = origin, y = count, fill = size)) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 ```
+
+
 This visualization shows the number of small, medium, and large planes for each of the 3 airports. The height of each bar is the number (or count) for each type of plane. EWR and LGA have more medium planes, while JFK has more large planes. All 3 airports have a lower amount of small planes.
 
 
@@ -325,9 +357,12 @@ flights %>%
   ) +
   theme_minimal()
 ```
+
+
 In this visualization, there are 3 different delay statuses of flights - True, False, or Early. This visualization shows the proportion of each of these statuses represented by bars, where the y-axis is the proportion. It appears that there are a much higher proportion of delayed flights than on time or early flights
 
-Delay By Airport
+## Delay By Airport
+
 
 ```{r}
 flights %>%
@@ -343,12 +378,14 @@ flights %>%
   ) +
   theme_minimal()
 ```
+
+
 In this visualization, there are 3 different delay statuses of flights - True, False, or Early. This visualization shows the number of each of these statuses represented by bars, where the y-axis is the count. It appears that there are a much higher proportion of delayed flights than on time or early flights.
 
 
 
 
-Delays by Carrier
+## Delays by Carrier
 
 
 ```{r}
@@ -367,10 +404,14 @@ flights %>%
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
+
+
 This bar graph lists out each airline and shows the number of delays of each. Each airline corresponds to a bar and the height of each bar is the number of delays for that airline. Delta,ExpressJet,JetBlue, and United Air Lines seem to have the most delays.
 
 
-Delays Over Time
+## Delays Over Time
+
+
 
 ```{r}
 flights %>%
@@ -387,10 +428,13 @@ flights %>%
   ) +
   theme_minimal()
 ```
+
+
 This visualization shows the number of delays over time by month through 12 months. Each month has a dot for which the height represents the number of delays. These dots are connected by a red line. It seems the number of delays picks up at around month 3 and stays up there for the rest of the months.
 
 
-Delays because of Precipitation
+## Delays because of Precipitation
+
 
 ```{r}
 flights_with_weather <- flights %>%
@@ -410,7 +454,8 @@ flights_with_weather %>%
 ```
 
 
-Delays by Time of Day
+## Delays by Time of Day
+
 
 ```{r}
 flights %>%
@@ -426,9 +471,12 @@ flights %>%
   ) +
   theme_minimal()
 ```
+
+
 This visualization shows the number of delays by hour of the day. Each hour has a dot for which the height is the number of delays. These dots are connected by the blue line. It seems that the beginning and ends of the day have less delays than the middle of the day, although there is a little dip at around hour 10.
 
-Delays by Plane Size
+## Delays by Plane Size
+
 
 ```{r}
 flights_with_planes <- flights %>%
@@ -447,10 +495,12 @@ flights_with_planes %>%
   ) +
   theme_minimal()
 ```
+
+
 This bar chart shows the delay status for each of the 3 sizes of planes.It uses the count of each represented by the height of the bars. "True" (or delayed) seems to be the heighest delay status for each of the 3 types.
 
 
-Heatmap of Delays (by Weather and Time)
+## Heatmap of Delays (by Weather and Time)
 
 
 ```{r}
@@ -471,7 +521,8 @@ flights_with_weather %>%
 ```
 
 
-Barchart of Average Wind Speed by Delay Category
+## Barchart of Average Wind Speed by Delay Category
+
 
 ```{r}
 ggplot(flights_with_weather, aes(x = delay, y = wind_speed, fill = delay)) + 
@@ -482,10 +533,13 @@ ggplot(flights_with_weather, aes(x = delay, y = wind_speed, fill = delay)) +
   theme_minimal()
 
 ```
+
+
 This barchart shows the average wind speed (at the origin airport) for each delay category, with the height of each bar representing the average wind speed. Delayed flights seem to have a slightly higher average wind speed than on time and early flights.
 
 
-Barchart of Average Temperature by Delay Category
+## Barchart of Average Temperature by Delay Category
+
 
 ```{r}
 ggplot(flights_with_weather, aes(x = delay, y = temp, fill = delay)) + 
@@ -495,10 +549,13 @@ ggplot(flights_with_weather, aes(x = delay, y = temp, fill = delay)) +
        y = "Average Temperature") +
   theme_minimal()
 ```
+
+
 This barchart shows the average temperature (at the origin airport) for each delay category, with the height of each bar representing the average temperature. Delayed flights seem to have a higher average temperature than on time and early flights.
 
 
-Barchart of Average Humidity by Delay Category
+## Barchart of Average Humidity by Delay Category
+
 
 ```{r}
 ggplot(flights_with_weather, aes(x = delay, y = humid, fill = delay)) + 
@@ -508,10 +565,13 @@ ggplot(flights_with_weather, aes(x = delay, y = humid, fill = delay)) +
        y = "Average Humidity") +
   theme_minimal()
 ```
+
+
 This barchart shows the average humidity (at the origin airport) for each delay category, with the height of each bar representing the average humidity. There does not appear to be much of a correlation here, although early flights seem to have slightly higher average humidity.
 
 
-Barchart of Differnce in Arrival Delay and Departure Delay by Airline
+## Barchart of Differnce in Arrival Delay and Departure Delay by Airline
+
 
 ```{r}
 delays %>% 
@@ -525,10 +585,13 @@ delays %>%
 
 
 ```
+
+
 This visualiztion shows the difference between the average arrival time and averague departure time for each airline. Alaska Airlines seems to be the most negative (meaning the arrival delay is much lower than the departure delay), while Frontier Airlines seems to be the most positive (meaning the arrival delay is greater than the departure delay)
 
 
-Barchart of Average Departure and Arrival Delay by Airline
+## Barchart of Average Departure and Arrival Delay by Airline
+
 
 ```{r}
 delays_long <- delays %>%
@@ -543,6 +606,8 @@ ggplot(delays_long, aes(x = name, y = avg_delay, fill = delay_type)) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) 
 ```
+
+
 This visualization shows both the average departure delay and arrival delay for each airline. Frontier airlines appears to have a higher arrival and depature delay than the others. Alaskan and Hawaiian airlines both have a negative average arrival delay, meaning the arrive early on average.
 
 #PNG images
@@ -687,11 +752,16 @@ for (i in 1:nrow(delays)) {
 print(logoGraph)
 ```
 
+
+
 ```{r}
 modelWeather <- glm(delay ~ temp + dewp + humid + wind_dir + wind_speed + wind_gust + precip + pressure + visib, data = merged)
 summary(modelWeather)
 ```
+
+
 We find that precip has a p value of 0.667210 which is greater than our alpha value of .05 so we would say that precipitation does not have a noticeable effect on delayed flights in the origin airport.
+
 We find that wind speed has a p value of 0.490046 which is greater than our alpha value of .05 so we would say that precipitation does not have a noticeable effect on delayed flights in the origin airport.
 
 
@@ -699,6 +769,7 @@ We find that wind speed has a p value of 0.490046 which is greater than our alph
 modelWeather <- glm(delay ~ temp + dewp + humid + wind_dir + wind_gust + pressure + visib, data = merged)
 summary(modelWeather)
 ```
+
 
 # Tree-Based Models
 
@@ -955,7 +1026,5 @@ plot(dendrogram, main = "Dendrogram of Feature Importance", xlab = "Features", y
 cat("Tree RMSE:", mod_tree_rmse, "\n")
 cat("Random Forest RMSE:", mod_rf_rmse)
 ```
-
-
 
 
