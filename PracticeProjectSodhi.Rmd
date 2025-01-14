@@ -183,6 +183,19 @@ merged <- merged %>%
 ))
 ```
 
+## Merged flights + planes
+```{r}
+fl_pl <- flights %>%
+  left_join(planes, by = c("tailnum"))
+
+fl_pl <- fl_pl[, !names(fl_pl) %in% "speed"]
+
+colSums(is.na(fl_pl))
+fl_pl <- fl_pl %>%
+  drop_na()
+nrow(fl_pl)
+```
+
 
 #Gets delayed/non-delayed flights
 ```{r}
