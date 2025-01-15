@@ -12,7 +12,6 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 library(tidyverse)
-#install.packages("nyfcflights13")
 library(nycflights13)
 library(ggplot2)
 library(dplyr)
@@ -246,7 +245,13 @@ heatmap_data <- heatmap_data %>%
 
 ggplot(heatmap_data, aes(x = hour, y = name, fill = avg_delay)) +
   geom_tile() +
-  scale_fill_gradient(low = "blue", high = "red", na.value = "grey50", name = "Avg Delay (min)") +
+  scale_fill_gradient2(
+    low = "blue", 
+    mid = "white", 
+    high = "red", 
+    midpoint = 0, 
+    name = "Avg Delay (min)"
+  ) +
   labs(
     title = "Heatmap of Average Flight Delays",
     x = "Hour of Day",
@@ -254,7 +259,11 @@ ggplot(heatmap_data, aes(x = hour, y = name, fill = avg_delay)) +
     caption = "Data source: nycflights13"
   ) +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(
+    axis.text.x = element_blank(),
+    axis.text.y = element_blank(),  
+    panel.grid = element_blank()    
+  )
 ```
 
 
@@ -275,7 +284,6 @@ weather_by_airport <- weather %>%
     avg_wind_speed = mean(wind_speed, na.rm = TRUE),
     avg_wind_gust = mean(wind_gust, na.rm = TRUE),
     avg_precip = mean(precip, na.rm = TRUE),
-    avg_pressure = mean(pressure, na.rm = TRUE),
     avg_visib = mean(visib, na.rm = TRUE)
   ) %>%
   pivot_longer(cols = starts_with("avg_"), names_to = "variable", values_to = "value") %>%
@@ -283,18 +291,28 @@ weather_by_airport <- weather %>%
 
 ggplot(weather_by_airport, aes(x = month, y = variable, fill = value)) +
   geom_tile() +
-  scale_fill_gradient(low = "blue", high = "red", na.value = "grey50", name = "Average Value") +
+  scale_fill_gradient2(
+    low = "blue",
+    mid = "white",
+    high = "red",
+    midpoint = 0, # Adjust midpoint if needed
+    name = "Average Value"
+  ) +
   labs(
-    title = "Heatmap of Weather Variables by Airport Over Time (by Month)",
-    x = "Month",
-    y = "Weather Variable",
+    title = "Weather Variables by Airport Over Time",
+    x = NULL, 
+    y = NULL, 
     caption = "Data source: nycflights13"
   ) +
-  facet_wrap(~origin) + # Facet by airport
+  facet_wrap(~origin, ncol = 1) +  
   theme_minimal() +
   theme(
-    axis.text.x = element_text(angle = 45, hjust = 1),
-    axis.text.y = element_text(size = 10)
+    axis.text.x = element_blank(),  
+    axis.text.y = element_blank(),  
+    panel.grid = element_blank(),   
+    strip.text = element_text(size = 12, face = "bold"), 
+    plot.title = element_text(hjust = 0.5), 
+    legend.position = "right"       
   )
 ```
 This heatmap shows the average value each weather variable across 12 months for each of the three origin airports. (to be continued)
@@ -392,6 +410,54 @@ In this visualization, there are 3 different delay statuses of flights - True, F
 
 
 
+##Delay By Plane Size
+
+```{r}
+# Merge flights and planes data
+flights_with_planes <- flights %>%
+  inner_join(planes, by = c("tailnum" = "tailnum")) %>% # Join on tail number
+  filter(!is.na(dep_delay), !is.na(size)) 
+
+# Calculate average delays by plane size
+avg_delays_by_size <- flights_with_planes %>%
+  group_by(size) %>%
+  summarize(avg_delay = mean(dep_delay, na.rm = TRUE))
+
+
+ggplot(avg_delays_by_size, aes(x = size, y = avg_delay, fill = size)) +
+  geom_col() +
+  scale_y_continuous(name = "Average Departure Delay (minutes)") +
+  scale_x_discrete(name = "Plane Size") +
+  labs(
+    title = "Average Delays by Plane Size",
+    caption = "Data source: nycflights13"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+    legend.position = "none"
+  )
+```
+##Correlation Test Between Plane Size and Average Delay
+
+```{r}
+# Clean the size column
+plane_delay_data <- plane_delay_data %>%
+  mutate(size = tolower(size)) %>% # Convert to lowercase for consistency
+  filter(size %in% c("small", "medium", "large")) # Keep only valid categories
+
+# Recreate size_numeric
+plane_delay_data <- plane_delay_data %>%
+  mutate(size_numeric = as.numeric(factor(size, levels = c("small", "medium", "large"))))
+
+cor_test_pearson <- cor.test(plane_delay_data$size_numeric, plane_delay_data$dep_delay, method = "pearson")
+print(cor_test_pearson)
+```
+
+cor = -0.01451104, suggesting very weak negative correlation.
+p-value is much smaller than 0.05, suggesting there is somewhat of a correlation, but clearly not a strong one. The confidence interval again proves this as it is extremely close to 0. So practically, plane size has no meaningful effect on delays.
+
+
 ## Delays by Carrier
 
 
@@ -460,6 +526,19 @@ flights_with_weather %>%
   theme_minimal()
 ```
 
+## Correlation Test Between Precipitation and Delays
+
+```{r}
+precip_delay_data <- flights_with_weather %>%
+  filter(!is.na(precip), !is.na(dep_delay))
+
+cor_test_result <- cor.test(precip_delay_data$precip, precip_delay_data$dep_delay, method = "pearson")
+print(cor_test_result)
+```
+
+cor = 0.04839791, meaning there is a very weak positive correlation. As precipitation increases, delays tend to slightly increase, since the p-value is much smaller than 0.05, but again, in practical terms, the precipitation clearly isn't impacting delays much.
+
+
 
 ## Delays by Time of Day
 
@@ -481,6 +560,22 @@ flights %>%
 
 
 This visualization shows the number of delays by hour of the day. Each hour has a dot for which the height is the number of delays. These dots are connected by the blue line. It seems that the beginning and ends of the day have less delays than the middle of the day, although there is a little dip at around hour 10.
+
+
+
+## correlation between time of day and number of delays
+
+```{r}
+time_delay_data <- flights_with_weather %>%
+  group_by(hour.x) %>%
+  summarize(total_delays = sum(dep_delay > 0, na.rm = TRUE))
+
+cor_test_result <- cor.test(time_delay_data$hour.x, time_delay_data$total_delays, method = "pearson")
+print(cor_test_result)
+```
+The p-value is much higher than 0.05, indicating that there is actually no correlation between the time of day and number of delays directly. The cor value suggests that at certain times of the day there may be slight increases in delays, but this is clearly not due just to it being a certain time. We have seen visualizations showing that over time, delays increase, but clearly this is not due to the actual time, but to other compounding factors.
+
+
 
 ## Delays by Plane Size
 
@@ -517,14 +612,25 @@ flights_with_weather %>%
   summarize(avg_precip = mean(precip, na.rm = TRUE)) %>%
   ggplot(aes(x = hour.x, y = month.x, fill = avg_precip)) +
   geom_tile() +
-  scale_fill_gradient(low = "blue", high = "red") +
-  labs(
-    title = "Heatmap of Delays by Precipitation and Time",
-    x = "Hour of Day",
-    y = "Month",
-    fill = "Average Precipitation"
+  scale_fill_gradient2(
+    low = "blue", 
+    mid = "white", 
+    high = "red", 
+    midpoint = 0, # Adjust midpoint as needed
+    name = "Avg Precipitation"
   ) +
-  theme_minimal()
+  labs(
+    title = "Delays by Precipitation and Time",
+    x = NULL, 
+    y = NULL, 
+    caption = "Data source: nycflights13"
+  ) +
+  theme_minimal() +
+  theme(
+    panel.grid = element_blank(),   
+    plot.title = element_text(hjust = 0.5, size = 14, face = "bold"), 
+    legend.position = "right"       
+  )
 ```
 
 
