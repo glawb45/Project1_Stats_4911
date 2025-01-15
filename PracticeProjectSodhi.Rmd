@@ -1032,3 +1032,119 @@ plot(dendrogram, main = "Dendrogram of Feature Importance", xlab = "Features", y
 cat("Tree RMSE:", mod_tree_rmse, "\n")
 cat("Random Forest RMSE:", mod_rf_rmse)
 ```
+
+
+
+
+
+```{r}
+carrierDelay <- merged %>%
+  filter(dep_delay > 15) %>%
+  group_by(carrier) %>%
+  summarise(delayNum = n())
+
+ggplot(carrierDelay, aes(x = carrier, y = delayNum, fill = carrier)) +
+  geom_bar(stat = "identity") +
+  labs(
+    title = "Number of Delays by Carrier",
+    x = "Carrier",
+    y = "Number of Delays"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
+```
+
+```{r}
+delayPerMonth <- merged %>%
+  filter(dep_delay > 15) %>%  
+  group_by(month) %>%
+  summarize(count = n(), .groups = 'drop')
+
+ggplot(delayPerMonth, aes(x = month, y = count, fill = month)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Delays by Month",
+       x = "Month",
+       y = "Number of Delays") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+
+```{r}
+merged <- merged %>%
+  mutate(tempPerDelay = cut(temp,
+                        breaks = seq(floor(min(temp)), ceiling(max(temp)), by = 5),
+                        include.lowest = TRUE))
+
+delaysTemp <- merged %>%
+  filter(dep_delay > 15, !is.na(tempPerDelay)) %>%  
+  group_by(tempPerDelay) %>%
+  summarize(count = n(), .groups = 'drop')
+
+ggplot(delaysTemp, aes(x = tempPerDelay, y = count, fill = tempPerDelay)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Delays by Temperature",
+       x = "Temperature Range",
+       y = "Number of Delays") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r}
+airlineDelay <- merged %>%
+  filter(dep_delay > 15) %>%
+  group_by(name.x) %>%
+  summarise(delayNum = n())
+
+ggplot(airlineDelay, aes(x = name.x, y = delayNum, fill = name.x)) +
+  geom_bar(stat = "identity") +
+  labs(
+    title = "Number of Delays by Airline",
+    x = "Airline",
+    y = "Number of Delays"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
+```
+
+```{r}
+merged <- merged %>%
+  mutate(depTime = cut(sched_dep_time,
+                            breaks = seq(500, 2400, by = 100),
+                            include.lowest = TRUE,
+                            labels = paste0(seq(500, 2300, by = 100), "-", seq(600, 2400, by = 100))))
+
+delayByTime <- merged %>%
+  filter(dep_delay > 15) %>%
+  group_by(depTime) %>%
+  summarize(count = n(), .groups = 'drop')
+
+ggplot(delayByTime, aes(x = depTime, y = count, fill = depTime)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Delays by Scheduled Departure Time",
+       x = "Scheduled Departure Time",
+       y = "Number of Delays") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r}
+merged <- merged %>%
+  mutate(windGustperDelay = cut(wind_gust,
+                        breaks = seq(floor(min(wind_gust)), ceiling(40), by = 2),
+                        include.lowest = TRUE))
+
+delaysTemp <- merged %>%
+  filter(dep_delay > 15, !is.na(windGustperDelay)) %>%  
+  group_by(windGustperDelay) %>%
+  summarize(count = n(), .groups = 'drop')
+
+ggplot(delaysTemp, aes(x = windGustperDelay, y = count, fill = windGustperDelay)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Delays by Wind Gust",
+       x = "Wind Gust",
+       y = "Number of Delays") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
