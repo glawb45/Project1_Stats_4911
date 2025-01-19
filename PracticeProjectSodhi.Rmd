@@ -162,18 +162,63 @@ delays <- flights %>%
 
 
 
-To look at for weather relationship with delay:
-  humid
-  
+```{r weather EDA}
+library(reshape2)
 
-  wind_dir
-  wind_speed
-  precip
-  visib
+weath_test <- weather
+
+weath_test <- weath_test[, !names(weath_test) %in% c("year", "origin", "time_hour")]
+
+# Compute the correlation matrix
+cor_matrix <- cor(weath_test, use = "complete.obs")
+
+# Melt the correlation matrix into a long format
+cor_melt <- melt(cor_matrix)
+
+# Create a heatmap
+ggplot(cor_melt, aes(x = Var1, y = Var2, fill = value)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white",
+                       midpoint = 0, limit = c(-1, 1), space = "Lab",
+                       name = "Correlation") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1, size = 12),
+        axis.text.y = element_text(size = 12)) +
+  labs(title = "Weather Variable Correlation", x = "", y = "")
+
+```
+
+
+
+```{r}
+fl_test <- flights
+
+fl_test <- fl_test[, names(fl_test) %in% c("month", "day", "dep_time", "sched_dep_time", "dep_delay", "arr_time", "sched_arr_time", "arr_delay", "air_time", "distance", "hour", "minute")]
+
+# Compute the correlation matrix
+cor_matrix <- cor(fl_test, use = "complete.obs")
+
+# Melt the correlation matrix into a long format
+cor_melt <- melt(cor_matrix)
+
+# Create a heatmap
+ggplot(cor_melt, aes(x = Var1, y = Var2, fill = value)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white",
+                       midpoint = 0, limit = c(-1, 1), space = "Lab",
+                       name = "Correlation") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1, size = 12),
+        axis.text.y = element_text(size = 12)) +
+  labs(title = "Flight Timing Correlations", x = "", y = "")
+
+```
 
 
 # Merging datasets
 ```{r}
+
+weather <- weather[, !names(weather) %in% c("wind_speed", "dewp")]
 
 merged <- flights %>%
   left_join(weather, by = c("origin", "year", "month", "day", "hour", "time_hour"))
